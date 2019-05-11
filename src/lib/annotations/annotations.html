@@ -289,6 +289,10 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
       return div.childNodes[0].attributes.getNamedItem('select$');
     })(),
 
+    _contentSelectForSlotName: function(name) {
+      return '[slot=\'' + name + '\']';
+    },
+
     _replaceSlotWithContent: function(slot) {
       var content = slot.ownerDocument.createElement('content');
       while (slot.firstChild) {
@@ -296,23 +300,24 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
       }
       var attrs = slot.attributes;
       for (var i=0; i<attrs.length; i++) {
-        // Attribute nodes are cloned and inserted into `attributes` in this
-        // way, rather than through `getAttribute` and `setAttribute`, because
-        // `setAttribute` accepts only a subset of names that the HTML parser
-        // might have actually added to the source node. This means of copying
-        // works for attributes with any name.
-        content.attributes.setNamedItem(attrs[i].cloneNode());
-      }
-      var name = slot.getAttribute('name');
-      if (name) {
-        content.setAttribute('select', '[slot=\'' + name + '\']');
-      }
-      var name$Value = slot.getAttribute('name$');
-      if (name$Value) {
-        // See the comment on `_select$Attr`.
-        var select$Attr = this._select$Attr.cloneNode();
-        select$Attr.value = '[slot=\'' + name$Value + '\']';
-        content.attributes.setNamedItem(select$Attr);
+        var attr = attrs[i];
+        if (attr.name === 'name') {
+          content.setAttribute('select',
+              this._contentSelectForSlotName(attr.value));
+        } else if (attr.name === 'name$') {
+          // See the comment on `_select$Attr`.
+          var select$Attr = this._select$Attr.cloneNode();
+          select$Attr.value = this._contentSelectForSlotName(attr.value);
+          content.attributes.setNamedItem(select$Attr);
+        } else {
+          // Other attribute nodes are cloned and inserted into `attributes`
+          // with `cloneNode` and `setNamedItem`, rather than through
+          // `getAttribute` and `setAttribute`, because `setAttribute` accepts
+          // only a subset of names that the HTML parser might have actually
+          // accepted and set to attributes on the source node. This means of
+          // copying works for attributes with any name.
+          content.attributes.setNamedItem(attr.cloneNode());
+        }
       }
       slot.parentNode.replaceChild(content, slot);
       return content;
